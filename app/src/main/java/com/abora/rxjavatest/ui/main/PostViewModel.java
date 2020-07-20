@@ -16,6 +16,7 @@ import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
 
@@ -26,9 +27,13 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class PostViewModel extends ViewModel {
+    private static final String TAG = "PostViewModel";
     MutableLiveData<List<PostModel>> postsMutableLiveData = new MutableLiveData<>();
     MutableLiveData<String> posts = new MutableLiveData<>();
-    private static final String TAG = "PostViewModel";
+
+    CompositeDisposable compositeDisposable = new CompositeDisposable();
+
+
 
     public void getPosts() {
 
@@ -37,8 +42,9 @@ public class PostViewModel extends ViewModel {
         Single<List<PostModel>> observable = PostsClient.getINSTANCE().getPosts()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread());
+        compositeDisposable.add(observable.subscribe(o -> postsMutableLiveData.setValue((o)), e -> Log.d(TAG, "getPosts: " + e)));
 
-        observable.subscribe(o -> postsMutableLiveData.setValue((o)), e -> Log.d(TAG, "getPosts: " + e));
+
 
 //        Observer<List<PostModel>> observer = new Observer<List<PostModel>>() {
 //            @Override
@@ -98,5 +104,11 @@ public class PostViewModel extends ViewModel {
 //                posts.setValue(t.getMessage());
 //            }
 //        });
+    }
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        // to clear all Observable Observer connection
+        compositeDisposable.clear();
     }
 }
